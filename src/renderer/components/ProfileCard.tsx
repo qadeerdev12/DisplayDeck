@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { missingScreens } from '../../shared/layout'
-import type { Profile } from '../../shared/types'
+import type { ProfileView } from '../../shared/types'
 import { LayoutPreview } from './LayoutPreview'
 
 interface ProfileCardProps {
-  profile: Profile
+  profile: ProfileView
   attachedScreenIds: string[]
   isActive: boolean
   busy: boolean
@@ -81,7 +81,18 @@ export function ProfileCard({
         </div>
 
         {profile.hotkey && (
-          <kbd className="rounded border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 font-mono text-[11px] text-neutral-400">
+          <kbd
+            title={
+              profile.hotkeyStatus === 'conflict'
+                ? 'Another app already owns this shortcut'
+                : undefined
+            }
+            className={`rounded border px-1.5 py-0.5 font-mono text-[11px] ${
+              profile.hotkeyStatus === 'conflict'
+                ? 'border-amber-700 bg-amber-950/60 text-amber-300 line-through'
+                : 'border-neutral-700 bg-neutral-950 text-neutral-400'
+            }`}
+          >
             {profile.hotkey.replace(/Control/g, '⌃').replace(/Alt/g, '⌥').replace(/\+/g, '')}
           </kbd>
         )}
@@ -123,6 +134,12 @@ export function ProfileCard({
           )}
         </div>
       </div>
+
+      {profile.hotkeyStatus === 'conflict' && (
+        <p className="mt-2 text-xs text-amber-400" role="note">
+          Shortcut unavailable — another app already owns this combination.
+        </p>
+      )}
 
       <div className="mt-3">
         <LayoutPreview screens={profile.screens} dimmed={!applicable} />

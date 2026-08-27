@@ -25,6 +25,18 @@ export interface Profile {
 }
 
 /** On-disk shape of profiles.json. */
+/**
+ * Whether a profile's accelerator is actually live. Registration fails when
+ * another app already owns the combo, and SPEC §M4 requires surfacing that
+ * rather than letting it fail silently.
+ */
+export type HotkeyStatus = 'none' | 'registered' | 'conflict'
+
+/** A profile plus main-process state the renderer needs but never persists. */
+export interface ProfileView extends Profile {
+  hotkeyStatus: HotkeyStatus
+}
+
 export interface StoreFile {
   version: 1
   profiles: Profile[]

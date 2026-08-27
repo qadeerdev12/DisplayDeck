@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { Profile, SetupState } from '../shared/types'
+import type { ProfileView, SetupState } from '../shared/types'
 import { EmptyState } from './components/EmptyState'
 import { ProfileCard } from './components/ProfileCard'
 import { SetupGuide } from './components/SetupGuide'
 
 export function App(): React.JSX.Element {
-  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [profiles, setProfiles] = useState<ProfileView[]>([])
   const [setup, setSetup] = useState<SetupState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)

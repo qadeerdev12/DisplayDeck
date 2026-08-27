@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcResult, Profile, SetupState } from '../shared/types'
+import type { IpcResult, Profile, ProfileView, SetupState } from '../shared/types'
 
 const CHANNELS = {
   listProfiles: 'profiles:list',
@@ -13,7 +13,7 @@ const CHANNELS = {
 } as const
 
 export interface DisplayDeckApi {
-  listProfiles: () => Promise<IpcResult<Profile[]>>
+  listProfiles: () => Promise<IpcResult<ProfileView[]>>
   saveCurrent: (name: string) => Promise<IpcResult<Profile>>
   applyProfile: (id: string) => Promise<IpcResult<Profile>>
   renameProfile: (id: string, name: string) => Promise<IpcResult<Profile>>
@@ -21,7 +21,7 @@ export interface DisplayDeckApi {
   setHotkey: (id: string, hotkey: string | null) => Promise<IpcResult<Profile>>
   getSetupState: () => Promise<IpcResult<SetupState>>
   /** Receive-only. Returns an unsubscribe function. */
-  onProfilesChanged: (listener: (profiles: Profile[]) => void) => () => void
+  onProfilesChanged: (listener: (profiles: ProfileView[]) => void) => () => void
 }
 
 const api: DisplayDeckApi = {
@@ -35,7 +35,7 @@ const api: DisplayDeckApi = {
   onProfilesChanged: (listener) => {
     // The raw IpcRendererEvent is deliberately not forwarded — it carries a
     // sender handle the renderer has no business holding.
-    const handler = (_event: unknown, profiles: Profile[]): void => listener(profiles)
+    const handler = (_event: unknown, profiles: ProfileView[]): void => listener(profiles)
     ipcRenderer.on(CHANNELS.profilesChanged, handler)
     return () => ipcRenderer.removeListener(CHANNELS.profilesChanged, handler)
   }

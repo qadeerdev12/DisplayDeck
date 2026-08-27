@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import type { IpcResult, Profile, SetupState } from '../shared/types'
+import type { IpcResult, Profile, ProfileView, SetupState } from '../shared/types'
 import {
   applyProfile as runApply,
   captureProfile,
@@ -68,24 +68,33 @@ async function guard<T>(work: () => Promise<T> | T): Promise<IpcResult<T>> {
 
 export interface IpcDeps {
   store: ProfileStore
+  /** Attaches main-only state (hotkey registration status) to each profile. */
+  decorate?: (profiles: Profile[]) => ProfileView[]
   /** Lets M5 suppress an auto-apply that would race a manual one. */
   onApplied?: (profile: Profile) => void
   onProfilesChanged?: () => void
 }
 
-export function broadcastProfilesChanged(profiles: Profile[]): void {
+export function broadcastProfilesChanged(profiles: ProfileView[]): void {
   for (const window of BrowserWindow.getAllWindows()) {
     window.webContents.send(CHANNELS.profilesChanged, profiles)
   }
 }
 
-export function registerIpcHandlers({ store, onApplied, onProfilesChanged }: IpcDeps): void {
+export function registerIpcHandlers({
+  store,
+  decorate = (profiles) => profiles.map((profile) => ({ ...profile, hotkeyStatus: 'none' as const })),
+  onApplied,
+  onProfilesChanged
+}: IpcDeps): void {
+  // Main owns the broadcast when it has extra state to attach; otherwise the
+  // handler broadcasts the plain list itself.
   const changed = (): void => {
-    broadcastProfilesChanged(store.list())
-    onProfilesChanged?.()
+    if (onProfilesChanged) onProfilesChanged()
+    else broadcastProfilesChanged(decorate(store.list()))
   }
 
-  ipcMain.handle(CHANNELS.listProfiles, () => guard(() => store.list()))
+  ipcMain.handle(CHANNELS.listProfiles, () => guard(() => decorate(store.list())))
 
   ipcMain.handle(CHANNELS.getSetupState, () => guard(() => getSetupState()))
 
