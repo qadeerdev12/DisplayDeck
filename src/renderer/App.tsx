@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ProfileView, SetupState } from '../shared/types'
 import { EmptyState } from './components/EmptyState'
+import { Logo } from './components/Logo'
 import { ProfileCard } from './components/ProfileCard'
 import { SetupGuide } from './components/SetupGuide'
 
@@ -71,14 +72,24 @@ export function App(): React.JSX.Element {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-neutral-900 bg-neutral-950/90 px-6 pb-4 pt-10 backdrop-blur">
-        <h1 className="text-base font-semibold">DisplayDeck</h1>
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-neutral-900 bg-neutral-950/80 px-6 pb-4 pt-10 backdrop-blur-md">
+        <div className="flex items-center gap-2.5">
+          <Logo className="h-[18px] w-[18px]" />
+          <div>
+            <h1 className="text-sm font-semibold leading-tight">DisplayDeck</h1>
+            {profiles.length > 0 && (
+              <p className="text-[11px] leading-tight text-neutral-500">
+                {profiles.length} {profiles.length === 1 ? 'profile' : 'profiles'}
+              </p>
+            )}
+          </div>
+        </div>
         {!needsSetup && profiles.length > 0 && (
           <button
             type="button"
             onClick={() => void save()}
             disabled={saving}
-            className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 disabled:opacity-50"
+            className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-200 transition-colors hover:border-neutral-600 hover:bg-neutral-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 motion-reduce:transition-none"
           >
             {saving ? 'Saving…' : 'Save current layout'}
           </button>
@@ -100,7 +111,7 @@ export function App(): React.JSX.Element {
         {!needsSetup && profiles.length === 0 && <EmptyState onSave={() => void save()} busy={saving} />}
 
         {!needsSetup && profiles.length > 0 && (
-          <ul className="mt-5 space-y-3">
+          <ul className="mt-5 space-y-3 pb-2">
             {profiles.map((profile) => (
               <ProfileCard
                 key={profile.id}

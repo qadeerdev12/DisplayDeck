@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { missingScreens } from '../../shared/layout'
-import type { ProfileView } from '../../shared/types'
+import type { ProfileView, Screen } from '../../shared/types'
 import { LayoutPreview } from './LayoutPreview'
 
 interface ProfileCardProps {
@@ -12,6 +12,23 @@ interface ProfileCardProps {
   onRename: (id: string, name: string) => void
   onDelete: (id: string) => void
   onToggleAutoApply: (id: string, autoApply: boolean) => void
+}
+
+const FOCUS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950'
+
+/** "32″ · 27″ · 24″ portrait" — the arrangement in words, for scanning. */
+function describeScreens(screens: Screen[]): string {
+  const active = screens.filter((screen) => screen.enabled)
+  if (active.length === 0) return 'No active displays'
+
+  return active
+    .map((screen) => {
+      const inches = /(\d+(?:\.\d+)?)\s*inch/i.exec(screen.name)?.[1]
+      const label = inches ? `${inches}″` : 'Display'
+      return screen.degree === 90 || screen.degree === 270 ? `${label} portrait` : label
+    })
+    .join(' · ')
 }
 
 export function ProfileCard({
@@ -45,11 +62,13 @@ export function ProfileCard({
 
   return (
     <li
-      className={`rounded-xl border p-4 ${
-        isActive ? 'border-sky-500/60 bg-sky-950/20' : 'border-neutral-800 bg-neutral-900/40'
+      className={`group rounded-xl border transition-colors motion-reduce:transition-none ${
+        isActive
+          ? 'border-sky-500/50 bg-sky-500/[0.04]'
+          : 'border-neutral-800/80 bg-neutral-900/30 hover:border-neutral-700'
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3 p-4 pb-3">
         <div className="min-w-0 flex-1">
           {renaming ? (
             <input
@@ -68,17 +87,18 @@ export function ProfileCard({
               className="w-full rounded-md border border-sky-500 bg-neutral-950 px-2 py-1 text-sm font-medium outline-none"
             />
           ) : (
-            <h2 className="truncate text-sm font-medium text-neutral-100">
-              {profile.name}
+            <div className="flex items-center gap-2">
               {isActive && (
-                <span className="ml-2 align-middle text-xs font-normal text-sky-400">
-                  active
-                </span>
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400"
+                  title="Applied most recently"
+                />
               )}
-            </h2>
+              <h2 className="truncate text-sm font-medium text-neutral-100">{profile.name}</h2>
+            </div>
           )}
-          <p className="mt-0.5 text-xs text-neutral-500">
-            {profile.screens.length} {profile.screens.length === 1 ? 'display' : 'displays'}
+          <p className="mt-1 truncate text-xs text-neutral-500">
+            {describeScreens(profile.screens)}
           </p>
         </div>
 
@@ -87,38 +107,38 @@ export function ProfileCard({
             title={
               profile.hotkeyStatus === 'conflict'
                 ? 'Another app already owns this shortcut'
-                : undefined
+                : 'Global shortcut'
             }
-            className={`rounded border px-1.5 py-0.5 font-mono text-[11px] ${
+            className={`shrink-0 rounded-md border px-1.5 py-1 font-mono text-[11px] leading-none ${
               profile.hotkeyStatus === 'conflict'
-                ? 'border-amber-700 bg-amber-950/60 text-amber-300 line-through'
+                ? 'border-amber-700/70 bg-amber-950/50 text-amber-400 line-through'
                 : 'border-neutral-700 bg-neutral-950 text-neutral-400'
             }`}
           >
-            {profile.hotkey.replace(/Control/g, '⌃').replace(/Alt/g, '⌥').replace(/\+/g, '')}
+            {profile.hotkey.replace(/Control/g, '⌃').replace(/Alt/g, '⌥').replace(/Shift/g, '⇧').replace(/Command|Meta/g, '⌘').replace(/\+/g, '')}
           </kbd>
         )}
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <button
             type="button"
             aria-label={`More actions for ${profile.name}`}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
             onBlur={() => window.setTimeout(() => setMenuOpen(false), 120)}
-            className="rounded-md px-2 py-1 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200"
+            className={`rounded-md px-2 py-1 leading-none text-neutral-600 hover:bg-neutral-800 hover:text-neutral-200 ${FOCUS}`}
           >
             ⋯
           </button>
           {menuOpen && (
-            <div className="absolute right-0 z-10 mt-1 w-32 overflow-hidden rounded-lg border border-neutral-700 bg-neutral-900 shadow-xl">
+            <div className="absolute right-0 z-10 mt-1 w-36 overflow-hidden rounded-lg border border-neutral-700 bg-neutral-900 py-1 shadow-2xl">
               <button
                 type="button"
                 onClick={() => {
                   setMenuOpen(false)
                   setRenaming(true)
                 }}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-neutral-800"
+                className="block w-full px-3 py-1.5 text-left text-sm text-neutral-200 hover:bg-neutral-800"
               >
                 Rename
               </button>
@@ -128,7 +148,7 @@ export function ProfileCard({
                   setMenuOpen(false)
                   onDelete(profile.id)
                 }}
-                className="block w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-neutral-800"
+                className="block w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-neutral-800"
               >
                 Delete
               </button>
@@ -137,39 +157,45 @@ export function ProfileCard({
         </div>
       </div>
 
-      {profile.hotkeyStatus === 'conflict' && (
-        <p className="mt-2 text-xs text-amber-400" role="note">
-          Shortcut unavailable — another app already owns this combination.
-        </p>
-      )}
-
-      <div className="mt-3">
+      <div className="px-4">
         <LayoutPreview screens={profile.screens} dimmed={!applicable} />
       </div>
 
-      <label className="mt-3 flex items-center gap-2 text-xs text-neutral-400">
-        <input
-          type="checkbox"
-          checked={profile.autoApply}
-          onChange={(event) => onToggleAutoApply(profile.id, event.target.checked)}
-          className="h-3.5 w-3.5 accent-sky-500"
-        />
-        Apply automatically when these displays are connected
-      </label>
+      {profile.hotkeyStatus === 'conflict' && (
+        <p className="mx-4 mt-3 rounded-md bg-amber-950/40 px-2.5 py-1.5 text-xs text-amber-400" role="note">
+          Shortcut unavailable — another app owns this combination.
+        </p>
+      )}
 
-      {applicable ? (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => onApply(profile.id)}
-          className="mt-3 w-full rounded-lg bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-90 disabled:opacity-50 motion-reduce:transition-none"
-        >
-          {busy ? 'Applying…' : 'Apply'}
-        </button>
-      ) : (
-        <p className="mt-3 rounded-lg bg-amber-950/50 px-3 py-2 text-xs text-amber-300" role="note">
-          Cannot apply — {missing.length === 1 ? 'this display is' : 'these displays are'} not
-          attached: {missing.map((screen) => screen.name).join(', ')}
+      <div className="flex items-center gap-3 p-4 pt-3">
+        <label className="flex flex-1 cursor-pointer items-center gap-2 text-xs text-neutral-400 hover:text-neutral-300">
+          <input
+            type="checkbox"
+            checked={profile.autoApply}
+            onChange={(event) => onToggleAutoApply(profile.id, event.target.checked)}
+            className={`h-3.5 w-3.5 rounded accent-sky-500 ${FOCUS}`}
+          />
+          Apply automatically
+        </label>
+
+        {applicable ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onApply(profile.id)}
+            className={`rounded-lg bg-neutral-100 px-4 py-1.5 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-90 disabled:opacity-50 motion-reduce:transition-none ${FOCUS}`}
+          >
+            {busy ? 'Applying…' : 'Apply'}
+          </button>
+        ) : (
+          <span className="text-xs text-neutral-600">Unavailable</span>
+        )}
+      </div>
+
+      {!applicable && (
+        <p className="mx-4 mb-4 rounded-md bg-amber-950/30 px-2.5 py-1.5 text-xs text-amber-400/90" role="note">
+          {missing.length === 1 ? 'Not attached: ' : 'Not attached: '}
+          {missing.map((screen) => screen.name).join(', ')}
         </p>
       )}
     </li>
