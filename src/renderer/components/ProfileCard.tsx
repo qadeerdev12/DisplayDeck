@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { missingScreens } from '../../shared/layout'
 import type { ProfileView, Screen } from '../../shared/types'
+import { HotkeyCapture } from './HotkeyCapture'
 import { LayoutPreview } from './LayoutPreview'
 
 interface ProfileCardProps {
@@ -12,6 +13,10 @@ interface ProfileCardProps {
   onRename: (id: string, name: string) => void
   onDelete: (id: string) => void
   onToggleAutoApply: (id: string, autoApply: boolean) => void
+  onSetHotkey: (id: string, hotkey: string | null) => void
+  onMove: (id: string, direction: -1 | 1) => void
+  canMoveUp: boolean
+  canMoveDown: boolean
 }
 
 const FOCUS =
@@ -39,10 +44,15 @@ export function ProfileCard({
   onApply,
   onRename,
   onDelete,
-  onToggleAutoApply
+  onToggleAutoApply,
+  onSetHotkey,
+  onMove,
+  canMoveUp,
+  canMoveDown
 }: ProfileCardProps): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
+  const [capturing, setCapturing] = useState(false)
   const [draft, setDraft] = useState(profile.name)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -146,6 +156,52 @@ export function ProfileCard({
                 type="button"
                 onClick={() => {
                   setMenuOpen(false)
+                  setCapturing(true)
+                }}
+                className="block w-full px-3 py-1.5 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+              >
+                Set shortcut…
+              </button>
+              {profile.hotkey && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onSetHotkey(profile.id, null)
+                  }}
+                  className="block w-full px-3 py-1.5 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                >
+                  Clear shortcut
+                </button>
+              )}
+              <div className="my-1 border-t border-neutral-800" />
+              <button
+                type="button"
+                disabled={!canMoveUp}
+                onClick={() => {
+                  setMenuOpen(false)
+                  onMove(profile.id, -1)
+                }}
+                className="block w-full px-3 py-1.5 text-left text-sm text-neutral-200 hover:bg-neutral-800 disabled:text-neutral-600 disabled:hover:bg-transparent"
+              >
+                Move up
+              </button>
+              <button
+                type="button"
+                disabled={!canMoveDown}
+                onClick={() => {
+                  setMenuOpen(false)
+                  onMove(profile.id, 1)
+                }}
+                className="block w-full px-3 py-1.5 text-left text-sm text-neutral-200 hover:bg-neutral-800 disabled:text-neutral-600 disabled:hover:bg-transparent"
+              >
+                Move down
+              </button>
+              <div className="my-1 border-t border-neutral-800" />
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false)
                   onDelete(profile.id)
                 }}
                 className="block w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-neutral-800"
@@ -156,6 +212,16 @@ export function ProfileCard({
           )}
         </div>
       </div>
+
+      {capturing && (
+        <HotkeyCapture
+          onCapture={(accelerator) => {
+            setCapturing(false)
+            onSetHotkey(profile.id, accelerator)
+          }}
+          onCancel={() => setCapturing(false)}
+        />
+      )}
 
       <div className="px-4">
         <LayoutPreview screens={profile.screens} dimmed={!applicable} />

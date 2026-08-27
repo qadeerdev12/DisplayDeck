@@ -15,6 +15,60 @@ const hotkeys = new HotkeyRegistry()
 /** Last profile applied this session — drives the tray checkmark. */
 let activeProfileId: string | null = null
 let autoSwitcher: AutoSwitcher | null = null
+let popoverWindow: BrowserWindow | null = null
+
+const POPOVER_WIDTH = 340
+const POPOVER_HEIGHT = 460
+
+function createPopover(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: POPOVER_WIDTH,
+    height: POPOVER_HEIGHT,
+    show: false,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    fullscreenable: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  // Dismiss like a real menu bar panel: clicking away closes it.
+  window.on('blur', () => window.hide())
+
+  if (process.env.ELECTRON_RENDERER_URL) {
+    void window.loadURL(`${process.env.ELECTRON_RENDERER_URL}?view=popover`)
+  } else {
+    void window.loadFile(join(__dirname, '../renderer/index.html'), { query: { view: 'popover' } })
+  }
+
+  return window
+}
+
+function togglePopover(trayBounds: Electron.Rectangle): void {
+  if (!popoverWindow || popoverWindow.isDestroyed()) popoverWindow = createPopover()
+
+  if (popoverWindow.isVisible()) {
+    popoverWindow.hide()
+    return
+  }
+
+  const work = screen.getDisplayNearestPoint({ x: trayBounds.x, y: trayBounds.y }).workArea
+  const x = Math.round(trayBounds.x + trayBounds.width / 2 - POPOVER_WIDTH / 2)
+  popoverWindow.setPosition(
+    Math.min(Math.max(x, work.x + 8), work.x + work.width - POPOVER_WIDTH - 8),
+    Math.round(trayBounds.y + trayBounds.height + 4)
+  )
+  popoverWindow.show()
+  popoverWindow.focus()
+}
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -86,6 +140,7 @@ function decorate(profiles: Profile[]): ProfileView[] {
 
 function trayDeps(): Parameters<typeof createTray>[0] {
   return {
+    onTogglePopover: togglePopover,
     getProfiles: () => store.list(),
     getActiveProfileId: () => activeProfileId,
     onApply: (profile) => void applyById(profile),
@@ -124,6 +179,10 @@ void app.whenReady().then(() => {
 
   registerIpcHandlers({
     store,
+    openMainWindow: () => {
+      popoverWindow?.hide()
+      showWindow()
+    },
     decorate,
     onApplied: (profile) => setActiveProfile(profile.id),
     onProfilesChanged

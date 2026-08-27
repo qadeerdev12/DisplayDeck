@@ -12,6 +12,7 @@ export function App(): React.JSX.Element {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const loadSetup = useCallback(async () => {
     const result = await window.displayDeck.getSetupState()
@@ -42,14 +43,42 @@ export function App(): React.JSX.Element {
     void loadSetup()
   }
 
+  const flash = (message: string): void => {
+    setNotice(message)
+    window.setTimeout(() => setNotice((current) => (current === message ? null : current)), 2400)
+  }
+
   const apply = async (id: string): Promise<void> => {
     setError(null)
     setBusyId(id)
     const result = await window.displayDeck.applyProfile(id)
-    if (result.ok) setActiveId(id)
-    else setError(result.error)
+    if (result.ok) {
+      setActiveId(id)
+      flash(`Applied “${result.value.name}”`)
+    } else {
+      setError(result.error)
+    }
     setBusyId(null)
     void loadSetup()
+  }
+
+  const setHotkey = async (id: string, hotkey: string | null): Promise<void> => {
+    const result = await window.displayDeck.setHotkey(id, hotkey)
+    if (!result.ok) setError(result.error)
+    else flash(hotkey ? `Shortcut set to ${hotkey}` : 'Shortcut cleared')
+  }
+
+  const move = async (id: string, direction: -1 | 1): Promise<void> => {
+    const index = profiles.findIndex((profile) => profile.id === id)
+    const target = index + direction
+    if (index < 0 || target < 0 || target >= profiles.length) return
+
+    const ids = profiles.map((profile) => profile.id)
+    const [moved] = ids.splice(index, 1)
+    ids.splice(target, 0, moved!)
+
+    const result = await window.displayDeck.reorderProfiles(ids)
+    if (!result.ok) setError(result.error)
   }
 
   const rename = async (id: string, name: string): Promise<void> => {
@@ -97,6 +126,15 @@ export function App(): React.JSX.Element {
       </header>
 
       <div className="px-6 pb-10">
+        {notice && (
+          <p
+            role="status"
+            className="mt-4 rounded-lg border border-sky-900/60 bg-sky-950/40 px-4 py-2.5 text-xs text-sky-200"
+          >
+            {notice}
+          </p>
+        )}
+
         {error && (
           <p
             role="alert"
@@ -112,7 +150,7 @@ export function App(): React.JSX.Element {
 
         {!needsSetup && profiles.length > 0 && (
           <ul className="mt-5 space-y-3 pb-2">
-            {profiles.map((profile) => (
+            {profiles.map((profile, index) => (
               <ProfileCard
                 key={profile.id}
                 profile={profile}
@@ -123,6 +161,10 @@ export function App(): React.JSX.Element {
                 onRename={(id, name) => void rename(id, name)}
                 onDelete={(id) => void remove(id)}
                 onToggleAutoApply={(id, value) => void toggleAutoApply(id, value)}
+                onSetHotkey={(id, hotkey) => void setHotkey(id, hotkey)}
+                onMove={(id, direction) => void move(id, direction)}
+                canMoveUp={index > 0}
+                canMoveDown={index < profiles.length - 1}
               />
             ))}
           </ul>

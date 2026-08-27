@@ -19,6 +19,8 @@ export const CHANNELS = {
   setHotkey: 'profiles:setHotkey',
   getSetupState: 'setup:get',
   setAutoApply: 'profiles:setAutoApply',
+  reorderProfiles: 'profiles:reorder',
+  openMainWindow: 'window:open',
   /** Push-only: main → renderer. The renderer cannot invoke this. */
   profilesChanged: 'profiles:changed'
 } as const
@@ -69,6 +71,7 @@ async function guard<T>(work: () => Promise<T> | T): Promise<IpcResult<T>> {
 
 export interface IpcDeps {
   store: ProfileStore
+  openMainWindow?: () => void
   /** Attaches main-only state (hotkey registration status) to each profile. */
   decorate?: (profiles: Profile[]) => ProfileView[]
   /** Lets M5 suppress an auto-apply that would race a manual one. */
@@ -84,6 +87,7 @@ export function broadcastProfilesChanged(profiles: ProfileView[]): void {
 
 export function registerIpcHandlers({
   store,
+  openMainWindow,
   decorate = (profiles) => profiles.map((profile) => ({ ...profile, hotkeyStatus: 'none' as const })),
   onApplied,
   onProfilesChanged
@@ -96,6 +100,8 @@ export function registerIpcHandlers({
   }
 
   ipcMain.handle(CHANNELS.listProfiles, () => guard(() => decorate(store.list())))
+
+  ipcMain.handle(CHANNELS.openMainWindow, () => guard(() => { openMainWindow?.(); return true }))
 
   ipcMain.handle(CHANNELS.getSetupState, () => guard(() => getSetupState()))
 
@@ -150,6 +156,17 @@ export function registerIpcHandlers({
       const profile = store.setAutoApply(id, autoApply)
       changed()
       return profile
+    })
+  )
+
+  ipcMain.handle(CHANNELS.reorderProfiles, (_event, ids: unknown) =>
+    guard(() => {
+      if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) {
+        throw new TypeError('reorder requires an array of profile ids.')
+      }
+      const profiles = store.reorder(ids as string[])
+      changed()
+      return profiles
     })
   )
 

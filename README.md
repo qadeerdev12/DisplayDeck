@@ -5,6 +5,10 @@ hotkey — instead of dragging boxes around in System Settings several times a d
 
 ![DisplayDeck](docs/screenshot.png)
 
+Clicking the menu bar icon drops a popover with a preview of every saved layout:
+
+![Menu bar popover](docs/popover.png)
+
 ## Requirements
 
 - macOS 12 or later (Apple Silicon or Intel)
@@ -37,8 +41,15 @@ DisplayDeck lives in the menu bar and has no Dock icon.
 
 - **Save a layout** — arrange your displays how you want them, then choose
   *Save current layout* from the menu bar icon or the app window.
-- **Restore a layout** — click the menu bar icon and pick a profile. The
-  checkmark shows which one you applied last.
+- **Restore a layout** — click the menu bar icon for a popover showing each
+  profile as a picture of its arrangement, and click one to apply it.
+  Right-click the icon instead for a plain text menu with a checkmark on
+  whichever profile you applied last.
+- **Assign a shortcut** — *Set shortcut…* in a profile's ⋯ menu, then press the
+  combination. It must include a modifier, so a stray keypress cannot swallow a
+  key system-wide.
+- **Reorder** — *Move up* / *Move down* in the same menu. The order carries
+  through to the menu bar.
 - **Hotkeys** — assign a shortcut per profile and it works from anywhere, with
   the window closed. If another app already owns the combination, the profile
   card says so rather than failing silently.

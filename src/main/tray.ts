@@ -3,6 +3,7 @@ import { Menu, Tray, app, nativeImage } from 'electron'
 import type { Profile } from '../shared/types'
 
 export interface TrayDeps {
+  onTogglePopover?: (trayBounds: Electron.Rectangle) => void
   getProfiles: () => Profile[]
   getActiveProfileId: () => string | null
   onApply: (profile: Profile) => void
@@ -62,11 +63,20 @@ export function createTray(deps: TrayDeps): Tray {
   tray = new Tray(trayImage())
   tray.setToolTip('DisplayDeck')
   refreshTray(deps)
+
+  // Left click opens the visual popover; right click keeps the native menu.
+  // setContextMenu() would bind the menu to left click and take the click
+  // event away, so the menu is popped up manually instead.
+  tray.on('click', (_event, bounds) => deps.onTogglePopover?.(bounds))
+  tray.on('right-click', () => tray?.popUpContextMenu(buildTrayMenu(deps)))
+
   return tray
 }
 
 export function refreshTray(deps: TrayDeps): void {
-  tray?.setContextMenu(buildTrayMenu(deps))
+  // Kept as a no-op hook: the menu is now rebuilt lazily on right click so it
+  // always reflects current state.
+  void deps
 }
 
 export function destroyTray(): void {
