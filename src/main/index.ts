@@ -1,6 +1,7 @@
 import { join } from 'node:path'
-import { BrowserWindow, app, shell } from 'electron'
-import { applyProfile, captureProfile } from './displayplacer'
+import { BrowserWindow, app, screen, shell } from 'electron'
+import { applyProfile, captureProfile, computeSignature, defaultRunner, parseList, resolveBinary } from './displayplacer'
+import { AutoSwitcher } from './autoswitch'
 import { HotkeyRegistry } from './hotkeys'
 import { broadcastProfilesChanged, registerIpcHandlers } from './ipc'
 import { ProfileStore } from './store'
@@ -13,6 +14,7 @@ const hotkeys = new HotkeyRegistry()
 
 /** Last profile applied this session — drives the tray checkmark. */
 let activeProfileId: string | null = null
+let autoSwitcher: AutoSwitcher | null = null
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -57,7 +59,14 @@ function showWindow(): void {
   mainWindow.focus()
 }
 
+async function currentSignature(): Promise<string> {
+  const { stdout } = await defaultRunner(resolveBinary(), ['list'])
+  return computeSignature(parseList(stdout).screens)
+}
+
 async function applyById(profile: Profile): Promise<void> {
+  // Any apply arms the guard, so auto-switch cannot react to our own work.
+  autoSwitcher?.noteApplied()
   const result = await applyProfile(profile)
   if (result.ok) {
     setActiveProfile(profile.id)
@@ -123,8 +132,35 @@ void app.whenReady().then(() => {
   createTray(trayDeps())
   hotkeys.syncAll(store.list(), (profile) => void applyById(profile))
 
+  autoSwitcher = new AutoSwitcher({
+    getProfiles: () => store.list(),
+    getCurrentSignature: currentSignature,
+    apply: async (profile) => {
+      const result = await applyProfile(profile)
+      if (result.ok) setActiveProfile(profile.id)
+      return result.ok
+    },
+    onError: (message) => {
+      lastAutoSwitchError = message
+      showWindow()
+      broadcastProfilesChanged(decorate(store.list()))
+    }
+  })
+
+  // macOS reports a single dock event as a burst; the switcher debounces.
+  screen.on('display-added', () => autoSwitcher?.handleDisplayChange())
+  screen.on('display-removed', () => autoSwitcher?.handleDisplayChange())
+
   mainWindow = createWindow()
 })
+
+let lastAutoSwitchError: string | null = null
+
+export function takeAutoSwitchError(): string | null {
+  const error = lastAutoSwitchError
+  lastAutoSwitchError = null
+  return error
+}
 
 // The tray keeps the app alive with every window closed; that is the point of
 // a menu bar app, so this deliberately does not quit.
@@ -132,5 +168,6 @@ app.on('window-all-closed', () => {})
 
 app.on('will-quit', () => {
   hotkeys.releaseAll()
+  autoSwitcher?.dispose()
   destroyTray()
 })

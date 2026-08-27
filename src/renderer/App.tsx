@@ -56,6 +56,11 @@ export function App(): React.JSX.Element {
     if (!result.ok) setError(result.error)
   }
 
+  const toggleAutoApply = async (id: string, autoApply: boolean): Promise<void> => {
+    const result = await window.displayDeck.setAutoApply(id, autoApply)
+    if (!result.ok) setError(result.error)
+  }
+
   const remove = async (id: string): Promise<void> => {
     const result = await window.displayDeck.deleteProfile(id)
     if (!result.ok) setError(result.error)
@@ -106,6 +111,7 @@ export function App(): React.JSX.Element {
                 onApply={(id) => void apply(id)}
                 onRename={(id, name) => void rename(id, name)}
                 onDelete={(id) => void remove(id)}
+                onToggleAutoApply={(id, value) => void toggleAutoApply(id, value)}
               />
             ))}
           </ul>

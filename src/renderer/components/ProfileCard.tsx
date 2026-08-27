@@ -11,6 +11,7 @@ interface ProfileCardProps {
   onApply: (id: string) => void
   onRename: (id: string, name: string) => void
   onDelete: (id: string) => void
+  onToggleAutoApply: (id: string, autoApply: boolean) => void
 }
 
 export function ProfileCard({
@@ -20,7 +21,8 @@ export function ProfileCard({
   busy,
   onApply,
   onRename,
-  onDelete
+  onDelete,
+  onToggleAutoApply
 }: ProfileCardProps): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
@@ -144,6 +146,16 @@ export function ProfileCard({
       <div className="mt-3">
         <LayoutPreview screens={profile.screens} dimmed={!applicable} />
       </div>
+
+      <label className="mt-3 flex items-center gap-2 text-xs text-neutral-400">
+        <input
+          type="checkbox"
+          checked={profile.autoApply}
+          onChange={(event) => onToggleAutoApply(profile.id, event.target.checked)}
+          className="h-3.5 w-3.5 accent-sky-500"
+        />
+        Apply automatically when these displays are connected
+      </label>
 
       {applicable ? (
         <button

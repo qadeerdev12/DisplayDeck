@@ -18,6 +18,7 @@ export const CHANNELS = {
   deleteProfile: 'profiles:delete',
   setHotkey: 'profiles:setHotkey',
   getSetupState: 'setup:get',
+  setAutoApply: 'profiles:setAutoApply',
   /** Push-only: main → renderer. The renderer cannot invoke this. */
   profilesChanged: 'profiles:changed'
 } as const
@@ -138,6 +139,17 @@ export function registerIpcHandlers({
       store.delete(id)
       changed()
       return true
+    })
+  )
+
+  ipcMain.handle(CHANNELS.setAutoApply, (_event, id: unknown, autoApply: unknown) =>
+    guard(() => {
+      if (typeof id !== 'string' || typeof autoApply !== 'boolean') {
+        throw new TypeError('setAutoApply requires an id and a boolean.')
+      }
+      const profile = store.setAutoApply(id, autoApply)
+      changed()
+      return profile
     })
   )
 

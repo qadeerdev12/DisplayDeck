@@ -9,6 +9,7 @@ const CHANNELS = {
   deleteProfile: 'profiles:delete',
   setHotkey: 'profiles:setHotkey',
   getSetupState: 'setup:get',
+  setAutoApply: 'profiles:setAutoApply',
   profilesChanged: 'profiles:changed'
 } as const
 
@@ -19,6 +20,7 @@ export interface DisplayDeckApi {
   renameProfile: (id: string, name: string) => Promise<IpcResult<Profile>>
   deleteProfile: (id: string) => Promise<IpcResult<boolean>>
   setHotkey: (id: string, hotkey: string | null) => Promise<IpcResult<Profile>>
+  setAutoApply: (id: string, autoApply: boolean) => Promise<IpcResult<Profile>>
   getSetupState: () => Promise<IpcResult<SetupState>>
   /** Receive-only. Returns an unsubscribe function. */
   onProfilesChanged: (listener: (profiles: ProfileView[]) => void) => () => void
@@ -31,6 +33,7 @@ const api: DisplayDeckApi = {
   renameProfile: (id, name) => ipcRenderer.invoke(CHANNELS.renameProfile, id, name),
   deleteProfile: (id) => ipcRenderer.invoke(CHANNELS.deleteProfile, id),
   setHotkey: (id, hotkey) => ipcRenderer.invoke(CHANNELS.setHotkey, id, hotkey),
+  setAutoApply: (id, autoApply) => ipcRenderer.invoke(CHANNELS.setAutoApply, id, autoApply),
   getSetupState: () => ipcRenderer.invoke(CHANNELS.getSetupState),
   onProfilesChanged: (listener) => {
     // The raw IpcRendererEvent is deliberately not forwarded — it carries a
