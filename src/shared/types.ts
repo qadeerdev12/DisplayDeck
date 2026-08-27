@@ -24,9 +24,19 @@ export interface Profile {
   createdAt: string
 }
 
-export interface ProfileStore {
+/** On-disk shape of profiles.json. */
+export interface StoreFile {
   version: 1
   profiles: Profile[]
+}
+
+/** Uniform IPC return shape; main never throws across the bridge. */
+export type IpcResult<T> = { ok: true; value: T } | { ok: false; error: string }
+
+export interface SetupState {
+  binaryInstalled: boolean
+  binaryPath: string | null
+  installCommand: string
 }
 
 /** Result of shelling out to the displayplacer binary. */
