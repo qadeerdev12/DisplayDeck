@@ -12,6 +12,15 @@ export default tseslint.config(
     rules: reactHooks.configs.recommended.rules
   },
   {
+    // Build scripts run in Node as CommonJS, outside the bundled app.
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { require: 'readonly', module: 'writable', exports: 'writable', __dirname: 'readonly', console: 'readonly' }
+    },
+    rules: { '@typescript-eslint/no-require-imports': 'off' }
+  },
+  {
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': 'warn'

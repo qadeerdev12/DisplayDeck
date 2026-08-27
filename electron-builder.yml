@@ -11,12 +11,20 @@ extraResources:
     to: trayTemplate.png
   - from: resources/trayTemplate@2x.png
     to: trayTemplate@2x.png
+afterPack: scripts/afterPack.js
 mac:
   category: public.app-category.utilities
+  # Hardened runtime exists to satisfy notarisation, which an ad-hoc signature
+  # cannot do anyway, and it blocks launch without extra entitlements.
+  hardenedRuntime: false
   target:
     - target: dmg
       arch: [arm64, x64]
   # Menu bar only: no Dock icon, no app switcher entry.
   extendInfo:
     LSUIElement: true
+  # Ad-hoc signing happens in scripts/afterPack.js; builder's own signing step
+  # runs before the metadata scrub and cannot succeed. Gatekeeper still needs
+  # the right-click -> Open dance documented in the README.
   identity: null
+  icon: resources/icon.png

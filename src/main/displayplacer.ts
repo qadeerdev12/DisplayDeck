@@ -26,6 +26,16 @@ export class BinaryNotFoundError extends Error {
   }
 }
 
+export class NoActiveScreensError extends Error {
+  constructor() {
+    super(
+      'No displays are currently active — they may be asleep. ' +
+        'Wake your displays and try saving again.'
+    )
+    this.name = 'NoActiveScreensError'
+  }
+}
+
 export class ParseError extends Error {
   constructor(message: string) {
     super(message)
@@ -199,6 +209,11 @@ export async function captureProfile(
   }
 
   const { args, screens } = parseList(stdout)
+
+  // Asleep displays are reported as `enabled:false` with no geometry. Saving
+  // that captures a profile which, when applied, switches every screen off.
+  if (!screens.some((screen) => screen.enabled)) throw new NoActiveScreensError()
+
   return {
     id: randomUUID(),
     name,

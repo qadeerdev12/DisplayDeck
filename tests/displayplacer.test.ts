@@ -220,3 +220,27 @@ describe('applyProfile', () => {
     expect(runner).not.toHaveBeenCalled()
   })
 })
+
+describe('captureProfile — asleep displays', () => {
+  // Real output from a machine whose screens had gone to sleep.
+  const ASLEEP = [
+    'Persistent screen id: AAA',
+    'Type: 27 inch external screen',
+    '',
+    'displayplacer "id:AAA enabled:false" "id:BBB enabled:false"'
+  ].join('\n')
+
+  it('refuses to capture a profile that would disable every display', async () => {
+    const runner = runnerReturning(ASLEEP)
+    await expect(captureProfile('Asleep', runner, alwaysExists)).rejects.toThrow(
+      /displays are currently active|asleep/i
+    )
+  })
+
+  it('still parses the disabled screens without inventing geometry', () => {
+    const { screens } = parseList(ASLEEP)
+    expect(screens).toHaveLength(2)
+    expect(screens.every((screen) => !screen.enabled)).toBe(true)
+    expect(screens.every((screen) => screen.boxWidth === 0)).toBe(true)
+  })
+})
