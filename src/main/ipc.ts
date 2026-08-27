@@ -3,7 +3,9 @@ import type { IpcResult, Profile, SetupState } from '../shared/types'
 import {
   applyProfile as runApply,
   captureProfile,
+  defaultRunner,
   isBinaryInstalled,
+  parseList,
   resolveBinary
 } from './displayplacer'
 import type { ProfileStore } from './store'
@@ -22,12 +24,33 @@ export const CHANNELS = {
 
 export const INSTALL_COMMAND = 'brew install displayplacer'
 
-export function getSetupState(): SetupState {
+export async function getSetupState(): Promise<SetupState> {
   const installed = isBinaryInstalled()
+  if (!installed) {
+    return {
+      binaryInstalled: false,
+      binaryPath: null,
+      installCommand: INSTALL_COMMAND,
+      attachedScreenIds: []
+    }
+  }
+
+  const binary = resolveBinary()
+  // A listing failure must not hide the setup panel, so fall back to "nothing
+  // attached" and let the profile rows explain themselves.
+  let attachedScreenIds: string[]
+  try {
+    const { stdout } = await defaultRunner(binary, ['list'])
+    attachedScreenIds = parseList(stdout).screens.map((screen) => screen.id)
+  } catch {
+    attachedScreenIds = []
+  }
+
   return {
-    binaryInstalled: installed,
-    binaryPath: installed ? resolveBinary() : null,
-    installCommand: INSTALL_COMMAND
+    binaryInstalled: true,
+    binaryPath: binary,
+    installCommand: INSTALL_COMMAND,
+    attachedScreenIds
   }
 }
 

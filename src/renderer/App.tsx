@@ -1,71 +1,116 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Profile, SetupState } from '../shared/types'
+import { EmptyState } from './components/EmptyState'
+import { ProfileCard } from './components/ProfileCard'
+import { SetupGuide } from './components/SetupGuide'
 
 export function App(): React.JSX.Element {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [setup, setSetup] = useState<SetupState | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  const refresh = useCallback(async () => {
-    const result = await window.displayDeck.listProfiles()
-    if (result.ok) setProfiles(result.value)
+  const loadSetup = useCallback(async () => {
+    const result = await window.displayDeck.getSetupState()
+    if (result.ok) setSetup(result.value)
     else setError(result.error)
   }, [])
 
   useEffect(() => {
+    void window.displayDeck.listProfiles().then((result) => {
+      if (result.ok) setProfiles(result.value)
+      else setError(result.error)
+    })
     // Loading over IPC on mount is the intended use of an effect; the rule
     // cannot tell these setState calls are in async callbacks, not the body.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refresh()
-    void window.displayDeck.getSetupState().then((result) => {
-      if (result.ok) setSetup(result.value)
-      else setError(result.error)
-    })
+    void loadSetup()
     // Keeps the list truthful when the tray saves or auto-switch fires.
     return window.displayDeck.onProfilesChanged(setProfiles)
-  }, [refresh])
+  }, [loadSetup])
 
   const save = async (): Promise<void> => {
     setError(null)
-    const result = await window.displayDeck.saveCurrent(`Layout ${profiles.length + 1}`)
+    setSaving(true)
+    const name = `Layout ${profiles.length + 1}`
+    const result = await window.displayDeck.saveCurrent(name)
+    if (!result.ok) setError(result.error)
+    setSaving(false)
+    void loadSetup()
+  }
+
+  const apply = async (id: string): Promise<void> => {
+    setError(null)
+    setBusyId(id)
+    const result = await window.displayDeck.applyProfile(id)
+    if (result.ok) setActiveId(id)
+    else setError(result.error)
+    setBusyId(null)
+    void loadSetup()
+  }
+
+  const rename = async (id: string, name: string): Promise<void> => {
+    const result = await window.displayDeck.renameProfile(id, name)
     if (!result.ok) setError(result.error)
   }
 
+  const remove = async (id: string): Promise<void> => {
+    const result = await window.displayDeck.deleteProfile(id)
+    if (!result.ok) setError(result.error)
+    else if (activeId === id) setActiveId(null)
+  }
+
+  const needsSetup = setup !== null && !setup.binaryInstalled
+
   return (
-    <main className="min-h-screen bg-neutral-950 p-8 text-neutral-100">
-      <h1 className="text-xl font-semibold">DisplayDeck</h1>
+    <main className="min-h-screen bg-neutral-950 text-neutral-100">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-neutral-900 bg-neutral-950/90 px-6 pb-4 pt-10 backdrop-blur">
+        <h1 className="text-base font-semibold">DisplayDeck</h1>
+        {!needsSetup && profiles.length > 0 && (
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={saving}
+            className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save current layout'}
+          </button>
+        )}
+      </header>
 
-      {setup && !setup.binaryInstalled && (
-        <p className="mt-4 rounded-lg bg-amber-950 p-4 text-sm text-amber-200">
-          displayplacer is not installed. Run{' '}
-          <code className="font-mono">{setup.installCommand}</code>
-        </p>
-      )}
+      <div className="px-6 pb-10">
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-3 text-xs text-red-200"
+          >
+            {error}
+          </p>
+        )}
 
-      {error && (
-        <p className="mt-4 rounded-lg bg-red-950 p-4 text-sm text-red-200" role="alert">
-          {error}
-        </p>
-      )}
+        {needsSetup && setup && <SetupGuide installCommand={setup.installCommand} />}
 
-      <button
-        type="button"
-        onClick={() => void save()}
-        className="mt-6 rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900"
-      >
-        Save current layout
-      </button>
+        {!needsSetup && profiles.length === 0 && <EmptyState onSave={() => void save()} busy={saving} />}
 
-      <ul className="mt-6 space-y-2">
-        {profiles.map((profile) => (
-          <li key={profile.id} className="rounded-lg bg-neutral-900 p-4">
-            <span className="font-medium">{profile.name}</span>
-            <span className="ml-2 text-sm text-neutral-400">
-              {profile.screens.length} screens
-            </span>
-          </li>
-        ))}
-      </ul>
+        {!needsSetup && profiles.length > 0 && (
+          <ul className="mt-5 space-y-3">
+            {profiles.map((profile) => (
+              <ProfileCard
+                key={profile.id}
+                profile={profile}
+                attachedScreenIds={setup?.attachedScreenIds ?? []}
+                isActive={profile.id === activeId}
+                busy={busyId === profile.id}
+                onApply={(id) => void apply(id)}
+                onRename={(id, name) => void rename(id, name)}
+                onDelete={(id) => void remove(id)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
     </main>
   )
 }
