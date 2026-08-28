@@ -125,14 +125,34 @@ Not sure which you need: Apple menu → About This Mac. Anything starting with
 
 Open the disk image and drag **DisplayDeck** to Applications.
 
-### 3. First launch: right-click → Open
+### 3. First launch: macOS will block it once
 
 > [!IMPORTANT]
-> **Double-clicking will not work the first time.** macOS will say the developer
-> cannot be verified. That's expected — the app is ad-hoc signed rather than
-> signed with a paid Apple Developer ID. Right-click the app and choose **Open**,
-> then confirm in the dialog. macOS remembers the choice, and every launch after
-> that is a normal double-click.
+> macOS will say it **cannot verify DisplayDeck is free of malware**. That is
+> expected. DisplayDeck is ad-hoc signed rather than notarised with a paid Apple
+> Developer ID, and macOS blocks every unnotarised app the first time it runs.
+
+To open it:
+
+1. Double-click **DisplayDeck** once and dismiss the warning.
+2. Open **System Settings → Privacy & Security**.
+3. Scroll to the Security section. There will be a line reading *"DisplayDeck was
+   blocked to protect your Mac"* with an **Open Anyway** button.
+4. Click **Open Anyway**, authenticate, then confirm **Open**.
+
+The Open Anyway entry only appears after a blocked launch attempt, so step 1 is
+required. macOS remembers the decision — every launch after this is a normal
+double-click.
+
+On macOS 14 and earlier you can instead right-click the app and choose **Open**.
+That shortcut was removed in macOS 15 (Sequoia), so use the steps above on any
+current system.
+
+Prefer the terminal? This does the same thing in one command:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/DisplayDeck.app
+```
 
 ### 4. Save your first layout
 
