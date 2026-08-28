@@ -57,7 +57,10 @@ export function Popover(): React.JSX.Element {
         )}
 
         {profiles.length > 0 && attached.length > 0 && (
-          <p className="mb-2 px-1 text-[11px] text-neutral-500">
+          <p
+            className="mb-2 truncate px-1 text-[11px] text-neutral-500"
+            title={(setup?.attachedScreens ?? []).map((s) => s.name).join(', ')}
+          >
             Connected: {(setup?.attachedScreens ?? []).map((s) => s.name).join(', ')}
           </p>
         )}

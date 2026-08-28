@@ -1,120 +1,243 @@
+<div align="center">
+
+<img src="resources/icon.png" width="104" alt="DisplayDeck">
+
 # DisplayDeck
 
-Save your macOS display arrangements and restore them from the menu bar or a
-hotkey — instead of dragging boxes around in System Settings several times a day.
+**Save your macOS display arrangements and restore them from the menu bar or a keyboard shortcut.**
 
-![DisplayDeck](docs/screenshot.png)
+![macOS 12+](https://img.shields.io/badge/macOS-12%2B-111?style=flat-square)
+![Apple Silicon and Intel](https://img.shields.io/badge/arch-arm64%20%2B%20x64-111?style=flat-square)
+![MIT](https://img.shields.io/badge/licence-MIT-111?style=flat-square)
 
-Clicking the menu bar icon drops a popover with a preview of every saved layout:
+</div>
 
-![Menu bar popover](docs/popover.png)
+---
 
-## Requirements
+## The problem
 
-- macOS 12 or later (Apple Silicon or Intel)
-- [`displayplacer`](https://github.com/jakehilborn/displayplacer), which does the
-  actual display manipulation:
+If you run several external displays, changing how they're arranged means opening
+System Settings → Displays and dragging boxes around. Rotating one monitor between
+landscape and portrait, or moving between docked and undocked, turns into a chore
+you repeat several times a day.
+
+DisplayDeck saves an arrangement once and restores it in a click, a keystroke, or
+automatically when you plug the displays back in.
+
+<div align="center">
+
+<img src="docs/window.png" width="440" alt="The DisplayDeck window showing two saved profiles with layout previews">
+
+</div>
+
+---
+
+## Features
+
+### Named profiles with visual previews
+
+Every saved arrangement is drawn to scale, so you can tell profiles apart at a
+glance. Displays stacked above the primary one, displays sitting at negative
+coordinates, and displays rotated to portrait are all drawn where they actually
+are. The primary display is marked with a dot.
+
+### A menu bar popover, not just a text menu
+
+Click the menu bar icon and you get a picture of every saved layout. Click one to
+apply it. Right-click the icon instead for a plain text menu with a checkmark on
+whichever profile you applied last.
+
+<div align="center">
+
+<img src="docs/popover.png" width="330" alt="The menu bar popover listing saved layouts with small previews">
+
+</div>
+
+### Global keyboard shortcuts
+
+Assign a combination per profile and it works from anywhere, even with the window
+closed. Shortcuts must include a modifier, so a stray binding can't swallow a key
+for every app on your Mac. If another app already owns a combination, the profile
+says so instead of failing quietly.
+
+### Automatic switching on dock and undock
+
+Mark a profile to apply itself whenever its displays are connected. macOS reports
+a single dock event as a burst of notifications, so DisplayDeck waits for them to
+settle and applies the matching profile exactly once — including ignoring the
+events its own changes provoke.
+
+### It tells you what it can see
+
+Unplug a display and profiles that need it stop offering themselves immediately.
+Rather than a cryptic failure, the window explains what's connected and what's
+missing — and distinguishes "only your built-in screen" from "no displays
+readable at all", which usually just means the screens are asleep.
+
+<div align="center">
+
+<img src="docs/disconnected.png" width="440" alt="DisplayDeck explaining that only the built-in display is connected">
+
+</div>
+
+### Rename, reorder, delete
+
+Everything else lives in each profile's `⋯` menu. Ordering carries through to the
+menu bar.
+
+<div align="center">
+
+<img src="docs/menu.png" width="440" alt="The per-profile overflow menu with rename, shortcut, reorder and delete">
+
+</div>
+
+### Out of the way by default
+
+No Dock icon and no app switcher entry. The menu bar icon is the entire interface
+until you ask for more.
+
+---
+
+## Install
+
+### 1. Install displayplacer
+
+DisplayDeck delegates the actual display manipulation to
+[`displayplacer`](https://github.com/jakehilborn/displayplacer), so it needs to be
+present first:
 
 ```bash
 brew install displayplacer
 ```
 
-DisplayDeck tells you if it's missing and shows you that command, so you can
-install it after the fact and reopen the app.
+Skip this and the app will open and show you exactly this command — you can
+install it afterwards and reopen.
 
-## Install
+### 2. Download the disk image
 
-1. Download `DisplayDeck-1.0.0-arm64.dmg` (Apple Silicon) or
-   `DisplayDeck-1.0.0.dmg` (Intel) from the release.
-2. Open the DMG and drag **DisplayDeck** to Applications.
-3. **First launch only:** right-click the app and choose **Open**, then confirm.
+| File | For |
+|---|---|
+| `DisplayDeck-1.0.0-arm64.dmg` | Apple Silicon (M1 and later) |
+| `DisplayDeck-1.0.0.dmg` | Intel |
 
-That third step matters. DisplayDeck is ad-hoc signed rather than signed with a
-paid Apple Developer ID, so Gatekeeper refuses to open it on a double-click and
-says the app "cannot be opened because the developer cannot be verified."
-Right-click → Open is the supported way to run it anyway; macOS remembers the
-choice and every later launch is a normal double-click.
+Not sure which you need: Apple menu → About This Mac. Anything starting with
+"Apple M" is Apple Silicon.
+
+Open the disk image and drag **DisplayDeck** to Applications.
+
+### 3. First launch: right-click → Open
+
+> [!IMPORTANT]
+> **Double-clicking will not work the first time.** macOS will say the developer
+> cannot be verified. That's expected — the app is ad-hoc signed rather than
+> signed with a paid Apple Developer ID. Right-click the app and choose **Open**,
+> then confirm in the dialog. macOS remembers the choice, and every launch after
+> that is a normal double-click.
+
+### 4. Save your first layout
+
+Arrange your displays how you want them, click the menu bar icon, and choose
+**Save current layout**. That's the whole loop — click that profile any time to
+restore it.
+
+---
 
 ## Using it
 
-DisplayDeck lives in the menu bar and has no Dock icon.
+| Task | How |
+|---|---|
+| Restore a layout | Click the menu bar icon, click a profile |
+| Save the current arrangement | Menu bar icon → *Save current layout* |
+| Assign a shortcut | Profile's `⋯` menu → *Set shortcut…*, then press the combination |
+| Remove a shortcut | Profile's `⋯` menu → *Clear shortcut* |
+| Apply automatically on connect | Tick *Apply automatically* on the profile |
+| Rename / reorder / delete | Profile's `⋯` menu |
+| Open the full window | Menu bar popover → *Open* |
+| Quit | Right-click the menu bar icon → *Quit DisplayDeck* |
 
-- **Save a layout** — arrange your displays how you want them, then choose
-  *Save current layout* from the menu bar icon or the app window.
-- **Restore a layout** — click the menu bar icon for a popover showing each
-  profile as a picture of its arrangement, and click one to apply it.
-  Right-click the icon instead for a plain text menu with a checkmark on
-  whichever profile you applied last.
-- **Assign a shortcut** — *Set shortcut…* in a profile's ⋯ menu, then press the
-  combination. It must include a modifier, so a stray keypress cannot swallow a
-  key system-wide.
-- **Reorder** — *Move up* / *Move down* in the same menu. The order carries
-  through to the menu bar.
-- **Hotkeys** — assign a shortcut per profile and it works from anywhere, with
-  the window closed. If another app already owns the combination, the profile
-  card says so rather than failing silently.
-- **Auto-apply** — tick *Apply automatically when these displays are connected*
-  and the profile is restored on its own when you dock or undock.
+Profiles are stored as a single JSON file in
+`~/Library/Application Support/DisplayDeck/profiles.json`, written atomically so a
+crash mid-write can't corrupt it.
 
-Profiles whose displays aren't all attached are dimmed and name the missing
-display instead of offering an apply that would fail.
+---
 
-## Known issues
+## Known limitations
 
-**Rotating the built-in display can crash SystemUIServer** on some macOS
-versions. The menu bar and Dock relaunch on their own after a moment; nothing is
-lost. This happens inside macOS's own rotation handling, below anything
-DisplayDeck controls. Rotating external displays is unaffected.
+**Rotating the built-in display can crash SystemUIServer** on some macOS versions.
+The menu bar relaunches itself after a moment and nothing is lost. This happens
+inside macOS's own rotation handling, below anything DisplayDeck controls.
+Rotating external displays is unaffected.
 
-**Swapping a monitor invalidates a profile.** Persistent display ids survive
-moving a display between ports, but a *different* physical monitor gets a new
-id. Profiles referencing the old one will show as not applicable — save a new
-profile to replace them.
+**Swapping a monitor invalidates a profile.** Display identifiers survive moving a
+display between ports, but a *different* physical monitor gets a new identifier.
+Affected profiles show as unavailable — save a new one to replace them.
 
-**Saving while your displays are asleep is refused.** Asleep displays report
-themselves as disabled with no geometry, so a profile captured then would
-switch every screen off when applied. DisplayDeck refuses to save and tells you
-to wake the displays first.
+**Window positions are not restored**, only display arrangement. That was
+deliberately out of scope.
 
-**displayplacer exits successfully even when a screen fails to move**, reporting
-the problem on stdout instead. DisplayDeck parses that output, so per-screen
-failures surface as errors rather than passing silently.
+**No cloud sync, accounts, telemetry, or auto-update.** Your profiles are a file
+on your Mac.
+
+---
 
 ## Development
 
 ```bash
 npm install
-npm run dev      # electron-vite dev server
-npm test         # vitest
+npm run dev      # electron-vite dev server with hot reload
+npm test         # vitest — 94 unit tests
 npm run lint     # eslint + tsc --noEmit
-npm run build    # electron-builder -> DMG in release/
+npm run build    # both DMGs into release/
 ```
 
-### Architecture
+### Stack
 
-The main process owns everything privileged. The renderer is pure UI with
-`contextIsolation`, `sandbox`, and no `nodeIntegration` — it reaches main only
-through named IPC channels on the preload bridge, and cannot touch `fs` or
-`child_process` at all.
-
-Display manipulation is delegated entirely to the `displayplacer` CLI rather
-than to CoreGraphics bindings. Saving a profile captures the quoted arguments
-from `displayplacer list`; applying one passes them straight back.
-
-| Path | Role |
+| | |
 |---|---|
-| `src/main/displayplacer.ts` | Binary resolution, output parsing, capture, apply |
-| `src/main/store.ts` | Profile CRUD, atomic JSON writes |
-| `src/main/tray.ts` | Menu bar icon and menu |
-| `src/main/hotkeys.ts` | Global shortcut registration and conflict tracking |
-| `src/main/autoswitch.ts` | Debounced display-change watcher |
-| `src/shared/layout.ts` | Preview geometry |
+| Shell | Electron 44 |
+| Build | electron-vite 5, Vite 7 |
+| Interface | React 18, TypeScript 6 (strict), Tailwind CSS 4 |
+| Tests | Vitest 4 |
+| Packaging | electron-builder 26 |
+| Engine | `displayplacer` 1.4.0 |
 
-The binary is resolved by absolute path (`/opt/homebrew/bin`, `/usr/local/bin`,
-`/usr/bin`) rather than through `PATH`, because an `.app` launched from Finder
-inherits no shell environment — a `PATH` lookup works in development and fails
-in the packaged build.
+### How it works
+
+Display manipulation is delegated entirely to the `displayplacer` CLI rather than
+to CoreGraphics bindings. `displayplacer list` ends its output with a ready-to-run
+command reproducing the current arrangement; saving a profile captures those
+arguments, and applying one passes them straight back. That is the whole engine.
+
+All privileged work lives in the main process. The renderer runs with
+`contextIsolation`, `sandbox`, and no `nodeIntegration` — it cannot reach the
+filesystem or spawn processes, and communicates only through named IPC channels
+declared on the preload bridge.
+
+```
+src/
+  main/          displayplacer.ts, store.ts, tray.ts, hotkeys.ts,
+                 autoswitch.ts, ipc.ts, index.ts
+  preload/       contextBridge surface
+  renderer/      React interface
+  shared/        types and layout maths used by both sides
+```
+
+### Notes for contributors
+
+Two macOS quirks are worth knowing before you touch the build:
+
+- **The binary is resolved by absolute path** (`/opt/homebrew/bin`,
+  `/usr/local/bin`, `/usr/bin`), never through `PATH`. An `.app` launched from
+  Finder inherits no shell environment, so a `PATH` lookup works in development
+  and fails in the packaged build.
+- **`npm run build` stages the app outside the project tree.** macOS stamps
+  metadata onto `.app` bundles living inside the project directory that makes
+  `codesign` refuse to sign them. Only the finished disk images are copied back
+  into `release/`.
+
+---
 
 ## Licence
 
-MIT
+MIT. Requires [displayplacer](https://github.com/jakehilborn/displayplacer) by
+Jake Hilborn, which is MIT licensed and installed separately.
