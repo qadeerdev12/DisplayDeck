@@ -199,27 +199,24 @@ void app.whenReady().then(() => {
       if (result.ok) setActiveProfile(profile.id)
       return result.ok
     },
-    onError: (message) => {
-      lastAutoSwitchError = message
+    onError: () => {
       showWindow()
       broadcastProfilesChanged(decorate(store.list()))
     }
   })
 
-  // macOS reports a single dock event as a burst; the switcher debounces.
-  screen.on('display-added', () => autoSwitcher?.handleDisplayChange())
-  screen.on('display-removed', () => autoSwitcher?.handleDisplayChange())
+  // The switcher debounces because macOS reports one dock event as a burst,
+  // but the window must not wait 1.5s to stop offering profiles it can no
+  // longer apply, so the renderer is told straight away.
+  const onDisplayChange = (): void => {
+    autoSwitcher?.handleDisplayChange()
+    broadcastProfilesChanged(decorate(store.list()))
+  }
+  screen.on('display-added', onDisplayChange)
+  screen.on('display-removed', onDisplayChange)
 
   mainWindow = createWindow()
 })
-
-let lastAutoSwitchError: string | null = null
-
-export function takeAutoSwitchError(): string | null {
-  const error = lastAutoSwitchError
-  lastAutoSwitchError = null
-  return error
-}
 
 // The tray keeps the app alive with every window closed; that is the point of
 // a menu bar app, so this deliberately does not quit.

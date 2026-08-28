@@ -34,7 +34,7 @@ export function Popover(): React.JSX.Element {
     setBusyId(null)
   }
 
-  const attached = setup?.attachedScreenIds ?? []
+  const attached = (setup?.attachedScreens ?? []).map((screen) => screen.id)
 
   return (
     <div className="flex h-screen flex-col overflow-hidden rounded-xl border border-neutral-700/70 bg-neutral-900/95 text-neutral-100 backdrop-blur-xl">
@@ -53,6 +53,12 @@ export function Popover(): React.JSX.Element {
         {profiles.length === 0 && (
           <p className="px-2 py-8 text-center text-[11px] text-neutral-500">
             No profiles yet. Save your current layout to get started.
+          </p>
+        )}
+
+        {profiles.length > 0 && attached.length > 0 && (
+          <p className="mb-2 px-1 text-[11px] text-neutral-500">
+            Connected: {(setup?.attachedScreens ?? []).map((s) => s.name).join(', ')}
           </p>
         )}
 

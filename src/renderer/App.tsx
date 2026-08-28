@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ProfileView, SetupState } from '../shared/types'
+import { missingScreens } from '../shared/layout'
+import { DisplayNotice } from './components/DisplayNotice'
 import { EmptyState } from './components/EmptyState'
 import { Logo } from './components/Logo'
 import { ProfileCard } from './components/ProfileCard'
@@ -29,8 +31,13 @@ export function App(): React.JSX.Element {
     // cannot tell these setState calls are in async callbacks, not the body.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSetup()
-    // Keeps the list truthful when the tray saves or auto-switch fires.
-    return window.displayDeck.onProfilesChanged(setProfiles)
+    // Fires on tray saves, auto-switch, and display connect/disconnect. The
+    // setup state has to be re-read too, or the window keeps offering profiles
+    // whose displays have just been unplugged.
+    return window.displayDeck.onProfilesChanged((next) => {
+      setProfiles(next)
+      void loadSetup()
+    })
   }, [loadSetup])
 
   const save = async (): Promise<void> => {
@@ -98,6 +105,12 @@ export function App(): React.JSX.Element {
   }
 
   const needsSetup = setup !== null && !setup.binaryInstalled
+  const attachedScreens = setup?.attachedScreens ?? []
+  const attachedIds = attachedScreens.map((screen) => screen.id)
+  const noneApplicable =
+    setup !== null &&
+    profiles.length > 0 &&
+    profiles.every((profile) => missingScreens(profile.screens, attachedIds).length > 0)
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
@@ -148,13 +161,17 @@ export function App(): React.JSX.Element {
 
         {!needsSetup && profiles.length === 0 && <EmptyState onSave={() => void save()} busy={saving} />}
 
+        {!needsSetup && noneApplicable && (
+          <DisplayNotice attachedScreens={attachedScreens} profileCount={profiles.length} />
+        )}
+
         {!needsSetup && profiles.length > 0 && (
           <ul className="mt-5 space-y-3 pb-2">
             {profiles.map((profile, index) => (
               <ProfileCard
                 key={profile.id}
                 profile={profile}
-                attachedScreenIds={setup?.attachedScreenIds ?? []}
+                attachedScreenIds={attachedIds}
                 isActive={profile.id === activeId}
                 busy={busyId === profile.id}
                 onApply={(id) => void apply(id)}

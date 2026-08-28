@@ -34,26 +34,26 @@ export async function getSetupState(): Promise<SetupState> {
       binaryInstalled: false,
       binaryPath: null,
       installCommand: INSTALL_COMMAND,
-      attachedScreenIds: []
+      attachedScreens: []
     }
   }
 
   const binary = resolveBinary()
   // A listing failure must not hide the setup panel, so fall back to "nothing
   // attached" and let the profile rows explain themselves.
-  let attachedScreenIds: string[]
+  let attachedScreens: { id: string; name: string }[]
   try {
     const { stdout } = await defaultRunner(binary, ['list'])
-    attachedScreenIds = parseList(stdout).screens.map((screen) => screen.id)
+    attachedScreens = parseList(stdout).screens.map(({ id, name }) => ({ id, name }))
   } catch {
-    attachedScreenIds = []
+    attachedScreens = []
   }
 
   return {
     binaryInstalled: true,
     binaryPath: binary,
     installCommand: INSTALL_COMMAND,
-    attachedScreenIds
+    attachedScreens
   }
 }
 

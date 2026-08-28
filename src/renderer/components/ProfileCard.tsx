@@ -260,8 +260,9 @@ export function ProfileCard({
 
       {!applicable && (
         <p className="mx-4 mb-4 rounded-md bg-amber-950/30 px-2.5 py-1.5 text-xs text-amber-400/90" role="note">
-          {missing.length === 1 ? 'Not attached: ' : 'Not attached: '}
-          {missing.map((screen) => screen.name).join(', ')}
+          {missing.length === profile.screens.length
+            ? 'None of these displays are attached'
+            : `Not attached: ${missing.map((screen) => screen.name).join(', ')}`}
         </p>
       )}
     </li>

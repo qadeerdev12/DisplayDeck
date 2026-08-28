@@ -49,8 +49,8 @@ export interface SetupState {
   binaryInstalled: boolean
   binaryPath: string | null
   installCommand: string
-  /** Ids currently attached, so the UI can disable profiles it cannot apply. */
-  attachedScreenIds: string[]
+  /** What is attached right now, so the UI can explain what it is seeing. */
+  attachedScreens: { id: string; name: string }[]
 }
 
 /** Result of shelling out to the displayplacer binary. */
