@@ -117,8 +117,8 @@ install it afterwards and reopen.
 
 | File | For |
 |---|---|
-| `DisplayDeck-1.0.0-arm64.dmg` | Apple Silicon (M1 and later) |
-| `DisplayDeck-1.0.0.dmg` | Intel |
+| `DisplayDeck-1.0.1-arm64.dmg` | Apple Silicon (M1 and later) |
+| `DisplayDeck-1.0.1.dmg` | Intel |
 
 Not sure which you need: Apple menu → About This Mac. Anything starting with
 "Apple M" is Apple Silicon.
@@ -205,7 +205,7 @@ on your Mac.
 ```bash
 npm install
 npm run dev      # electron-vite dev server with hot reload
-npm test         # vitest — 94 unit tests
+npm test         # vitest — 97 unit tests
 npm run lint     # eslint + tsc --noEmit
 npm run build    # both DMGs into release/
 ```

@@ -1,6 +1,6 @@
 {
   "name": "displaydeck",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "macOS menu bar app for saving and restoring multi-display arrangements",
   "main": "./out/main/index.js",
   "author": "Qadeer",
