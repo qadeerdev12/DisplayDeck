@@ -23,7 +23,13 @@ export function Popover(): React.JSX.Element {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
-    return window.displayDeck.onProfilesChanged(setProfiles)
+    // The popover window is created once and only hidden, so it never
+    // remounts. Without re-reading setup here it keeps a stale idea of which
+    // displays are attached for the rest of the session.
+    return window.displayDeck.onProfilesChanged((next) => {
+      setProfiles(next)
+      void load()
+    })
   }, [load])
 
   const apply = async (id: string): Promise<void> => {

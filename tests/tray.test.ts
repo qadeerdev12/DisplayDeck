@@ -12,20 +12,41 @@ vi.mock('electron', () => ({
 
 const { trayMenuTemplate } = await import('../src/main/tray')
 
-const profile = (id: string, name: string, hotkey: string | null = null): Profile => ({
+const screen = (id: string): Profile['screens'][number] => ({
+  id,
+  name: `${id} screen`,
+  width: 2560,
+  height: 1440,
+  boxWidth: 2560,
+  boxHeight: 1440,
+  x: 0,
+  y: 0,
+  degree: 0,
+  hz: 60,
+  enabled: true,
+  raw: ''
+})
+
+const profile = (
+  id: string,
+  name: string,
+  hotkey: string | null = null,
+  screenIds: string[] = []
+): Profile => ({
   id,
   name,
   args: [],
-  screens: [],
+  screens: screenIds.map(screen),
   signature: 'sig',
   hotkey,
   autoApply: false,
   createdAt: '2026-08-27T00:00:00.000Z'
 })
 
-const deps = (profiles: Profile[], activeId: string | null = null) => ({
+const deps = (profiles: Profile[], activeId: string | null = null, attached: string[] = []) => ({
   getProfiles: () => profiles,
   getActiveProfileId: () => activeId,
+  getAttachedScreenIds: () => attached,
   onApply: vi.fn(),
   onSaveCurrent: vi.fn(),
   onOpen: vi.fn()
@@ -76,6 +97,35 @@ describe('trayMenuTemplate', () => {
 
     expect(template[0]).toMatchObject({ label: 'No profiles yet', enabled: false })
     expect(labels(template)).toContain('Save current layout')
+  })
+
+  it('greys out a profile whose displays are not attached', () => {
+    const template = trayMenuTemplate(
+      deps([profile('a', 'Desk', null, ['s1', 's2'])], null, ['s1'])
+    )
+
+    expect(template[0]).toMatchObject({
+      label: 'Desk (displays not attached)',
+      enabled: false
+    })
+  })
+
+  it('enables a profile once every display it needs is attached', () => {
+    const template = trayMenuTemplate(
+      deps([profile('a', 'Desk', null, ['s1', 's2'])], null, ['s2', 's1', 's3'])
+    )
+
+    expect(template[0]).toMatchObject({ label: 'Desk', enabled: true })
+  })
+
+  it('does not checkmark an unavailable profile that was applied earlier', () => {
+    // Unplugging the displays of the active profile must not leave a checkmark
+    // beside a row the menu will not let you click.
+    const template = trayMenuTemplate(
+      deps([profile('a', 'Desk', null, ['s1'])], 'a', [])
+    )
+
+    expect(template[0]).toMatchObject({ enabled: false, checked: false })
   })
 
   it('applies the profile that was clicked', () => {

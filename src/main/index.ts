@@ -17,6 +17,9 @@ let activeProfileId: string | null = null
 let autoSwitcher: AutoSwitcher | null = null
 let popoverWindow: BrowserWindow | null = null
 
+/** Last known attached ids, so the tray menu can be built synchronously. */
+let attachedScreenIds: string[] = []
+
 const POPOVER_WIDTH = 340
 const POPOVER_HEIGHT = 460
 
@@ -66,6 +69,9 @@ function togglePopover(trayBounds: Electron.Rectangle): void {
     Math.min(Math.max(x, work.x + 8), work.x + work.width - POPOVER_WIDTH - 8),
     Math.round(trayBounds.y + trayBounds.height + 4)
   )
+  // It may have been hidden while displays came and went, so push current
+  // state before it becomes visible.
+  broadcastProfilesChanged(decorate(store.list()))
   popoverWindow.show()
   popoverWindow.focus()
 }
@@ -118,6 +124,15 @@ async function currentSignature(): Promise<string> {
   return computeSignature(parseList(stdout).screens)
 }
 
+async function refreshAttachedScreens(): Promise<void> {
+  try {
+    const { stdout } = await defaultRunner(resolveBinary(), ['list'])
+    attachedScreenIds = parseList(stdout).screens.map((screen) => screen.id)
+  } catch {
+    attachedScreenIds = []
+  }
+}
+
 async function applyById(profile: Profile): Promise<void> {
   // Any apply arms the guard, so auto-switch cannot react to our own work.
   autoSwitcher?.noteApplied()
@@ -142,6 +157,7 @@ function trayDeps(): Parameters<typeof createTray>[0] {
   return {
     onTogglePopover: togglePopover,
     getProfiles: () => store.list(),
+    getAttachedScreenIds: () => attachedScreenIds,
     getActiveProfileId: () => activeProfileId,
     onApply: (profile) => void applyById(profile),
     onSaveCurrent: () => void saveCurrentFromTray(),
@@ -188,6 +204,7 @@ void app.whenReady().then(() => {
     onProfilesChanged
   })
 
+  void refreshAttachedScreens()
   createTray(trayDeps())
   hotkeys.syncAll(store.list(), (profile) => void applyById(profile))
 
@@ -210,7 +227,11 @@ void app.whenReady().then(() => {
   // longer apply, so the renderer is told straight away.
   const onDisplayChange = (): void => {
     autoSwitcher?.handleDisplayChange()
-    broadcastProfilesChanged(decorate(store.list()))
+    void refreshAttachedScreens().then(() => {
+      // The tray menu is rebuilt from this on each open, and the popover and
+      // window both re-read setup when they hear the broadcast.
+      broadcastProfilesChanged(decorate(store.list()))
+    })
   }
   screen.on('display-added', onDisplayChange)
   screen.on('display-removed', onDisplayChange)

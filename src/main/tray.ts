@@ -1,10 +1,13 @@
 import { join } from 'node:path'
 import { Menu, Tray, app, nativeImage } from 'electron'
+import { missingScreens } from '../shared/layout'
 import type { Profile } from '../shared/types'
 
 export interface TrayDeps {
   onTogglePopover?: (trayBounds: Electron.Rectangle) => void
   getProfiles: () => Profile[]
+  /** Ids attached right now; profiles needing anything else cannot be applied. */
+  getAttachedScreenIds: () => string[]
   getActiveProfileId: () => string | null
   onApply: (profile: Profile) => void
   onSaveCurrent: () => void
@@ -31,17 +34,26 @@ function trayImage(): Electron.NativeImage {
 export function trayMenuTemplate(deps: TrayDeps): Electron.MenuItemConstructorOptions[] {
   const profiles = deps.getProfiles()
   const activeId = deps.getActiveProfileId()
+  const attached = deps.getAttachedScreenIds()
 
-  const profileItems: Electron.MenuItemConstructorOptions[] = profiles.map((profile) => ({
-    label: profile.name,
-    type: 'checkbox',
-    checked: profile.id === activeId,
-    accelerator: profile.hotkey ?? undefined,
-    // The accelerator is drawn for reference only; globalShortcut already owns
-    // the real binding and would double-fire if the menu claimed it too.
-    registerAccelerator: false,
-    click: () => deps.onApply(profile)
-  }))
+  const profileItems: Electron.MenuItemConstructorOptions[] = profiles.map((profile) => {
+    // Offering a profile whose displays are gone just produces a failure the
+    // menu has no way to report, so it is greyed out and says why instead.
+    const missing = missingScreens(profile.screens, attached)
+    const applicable = missing.length === 0
+
+    return {
+      label: applicable ? profile.name : `${profile.name} (displays not attached)`,
+      type: 'checkbox',
+      checked: applicable && profile.id === activeId,
+      enabled: applicable,
+      accelerator: profile.hotkey ?? undefined,
+      // The accelerator is drawn for reference only; globalShortcut already owns
+      // the real binding and would double-fire if the menu claimed it too.
+      registerAccelerator: false,
+      click: () => deps.onApply(profile)
+    }
+  })
 
   return [
     ...(profileItems.length > 0
